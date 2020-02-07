@@ -3,10 +3,10 @@ from typing import Sequence, List, Tuple
 import numpy
 
 from pybio.core.array import PyBioArray
-from pybio.core.transformations import PyBioTransformation
+from pybio.core.transformations import Transformation
 
 
-class Reshape(PyBioTransformation):
+class Reshape(Transformation):
     def __init__(self, shape: Sequence[int], **super_kwargs):
         self.shape = shape
         super().__init__(**super_kwargs)

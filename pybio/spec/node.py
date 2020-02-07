@@ -1,10 +1,9 @@
-import dataclasses
+import pybio
+
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NewType, Optional, Tuple, Union
-
-import pybio
+from typing import List, Optional, Any, Dict, NewType, Tuple, Union, Type, NamedTuple
 
 
 @dataclass
@@ -25,7 +24,7 @@ class MagicShapeValue(Enum):
 
 @dataclass
 class ImportablePath(Node):
-    filepath: Union[Path]
+    filepath: str
     callable_name: str
 
 
@@ -35,16 +34,21 @@ class ImportableModule(Node):
     callable_name: str
 
 
-ImportableSource = Union[ImportableModule, ImportablePath]
+Source = Union[ImportableModule, ImportablePath]
 
 
 @dataclass
-class WithImportableSource:
-    source: ImportableSource
+class WithSource:
+    source: Source
     required_kwargs: List[str]
     optional_kwargs: Dict[str, Any]
 
 
+# Types for non-nested fields
+Axes = NewType("Axes", str)
+Dependencies = NewType("Dependencies", Path)
+
+# Types for schema
 @dataclass
 class CiteEntry(Node):
     text: str
@@ -53,7 +57,7 @@ class CiteEntry(Node):
 
 
 @dataclass
-class BaseSpec(Node, WithImportableSource):
+class BaseSpec(Node, WithSource):
     name: str
     format_version: str
     description: str
@@ -89,9 +93,6 @@ class OutputShape(Node):
         return len(self.scale)
 
 
-Axes = NewType("Axes", str)
-
-
 @dataclass
 class Array(Node):
     name: str
@@ -122,24 +123,9 @@ class WithOutputs:
 
 
 @dataclass
-class URI(Node):
-    scheme: str
-    netloc: str
-    path: str
-
-
-@dataclass
-class SpecURI(URI):
-    spec_schema: "pybio.spec.schema.BaseSpec"
-
-
-@dataclass
 class SpecWithKwargs(Node):
-    spec: Union[SpecURI, BaseSpec]
+    spec: BaseSpec
     kwargs: Dict[str, Any]
-
-
-Dependencies = NewType("Dependencies", Path)
 
 
 @dataclass
@@ -149,18 +135,13 @@ class TransformationSpec(BaseSpec, WithInputs, WithOutputs):
 
 @dataclass
 class Transformation(SpecWithKwargs):
-    spec: Union[SpecURI, TransformationSpec]
+    spec: TransformationSpec
 
 
 @dataclass
-class WithFileSource:
-    source: URI
+class Weights(Node):
+    source: str
     hash: Dict[str, str]
-
-
-@dataclass
-class Weights(Node, WithFileSource):
-    pass
 
 
 @dataclass
@@ -178,8 +159,7 @@ class ReaderSpec(BaseSpec, WithOutputs):
 
 @dataclass
 class Reader(SpecWithKwargs):
-    spec: Union[SpecURI, ReaderSpec]
-    transformations: List[Transformation]
+    spec: ReaderSpec
 
 
 @dataclass
@@ -189,32 +169,26 @@ class SamplerSpec(BaseSpec, WithOutputs):
 
 @dataclass
 class Sampler(SpecWithKwargs):
-    spec: Union[SpecURI, SamplerSpec]
-    readers: List[Reader]
+    spec = SamplerSpec
 
 
 @dataclass
-class Optimizer(Node, WithImportableSource):
+class Optimizer(Node, WithSource):
     pass
 
 
 @dataclass
 class Setup(Node):
-    samplers: List[Sampler]
+    readers: List[Reader]
+    sampler: Sampler
     preprocess: List[Transformation]
     postprocess: List[Transformation]
     losses: List[Transformation]
     optimizer: Optimizer
-    # todo: make non-optional (here, but add as optional to schmea) todo: add real meta sampler
-    sampler: Optional[Sampler] = None
-
-    def __post_init__(self):
-        assert len(self.samplers) == 1
-        self.sampler = self.samplers[0]
 
 
 @dataclass
-class Training(Node, WithImportableSource):
+class Training(Node, WithSource):
     setup: Setup
     dependencies: Dependencies
     description: Optional[str]
@@ -228,4 +202,21 @@ class ModelSpec(BaseSpec, WithInputs, WithOutputs):
 
 @dataclass
 class Model(SpecWithKwargs):
-    spec: Union[SpecURI, ModelSpec]
+    spec: ModelSpec
+
+
+@dataclass
+class URI:
+    scheme: str
+    netloc: str
+    path: str
+
+
+@dataclass
+class SpecURI(URI):
+    spec_schema: "pybio.spec.schema.BaseSpec"
+
+
+@dataclass
+class DataURI(URI):
+    spec_schema: "pybio.spec.schema.BaseSpec"

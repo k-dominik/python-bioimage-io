@@ -1,9 +1,9 @@
 import numpy as np
-from pybio.core.transformations import SynchronizedPyBioTransformation
+from pybio.core.transformations import SynchronizedTransformation
 
 # TODO nd ?
 # TODO random seed
-class RandomAxisRotation(SynchronizedPyBioTransformation):
+class RandomAxisRotation(SynchronizedTransformation):
     def __init__(self, apply_to):
         super().__init__(apply_to)
         self.k = 0

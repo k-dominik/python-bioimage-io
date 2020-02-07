@@ -1,16 +1,14 @@
 from typing import Sequence, Tuple
 
 from pybio.core.array import PyBioArray
-from pybio.core.transformations import PyBioTransformation, apply_transformations
-from pybio.spec.nodes import MagicTensorsValue, OutputArray
+from pybio.core.transformations import apply_transformations
+from pybio.spec import utils
+from pybio.spec.node import OutputArray, Transformation
 
 
 class PyBioReader:
-    def __init__(self, outputs: Sequence[OutputArray], transformations: Sequence[PyBioTransformation] = tuple()):
-        if isinstance(outputs, MagicTensorsValue):
-            raise ValueError(f"unresolved MagicTensorsValue: {outputs}")
-
-        self.transformations = transformations
+    def __init__(self, outputs: Sequence[OutputArray], transformations: Sequence[Transformation] = tuple()):
+        self.transformations = [utils.get_instance(trf) for trf in transformations]
 
         self._output = tuple(outputs)
         assert len(self.axes) == len(self.shape), (self.axes, self.shape)
@@ -32,7 +30,7 @@ class PyBioReader:
         raise NotImplementedError
 
     def apply_transformations(self, *arrays: PyBioArray) -> Sequence[PyBioArray]:
-        if self.transformations:
-            return apply_transformations(self.transformations, *arrays)
-        else:
+        if self.transformations is None:
             return arrays
+        else:
+            return apply_transformations(self.transformations, *arrays)

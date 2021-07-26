@@ -1,0 +1,10 @@
+name: bio-core-dev
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - black
+  - mypy
+  - pytest
+  - python >=3.7
